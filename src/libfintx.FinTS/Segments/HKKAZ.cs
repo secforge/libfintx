@@ -26,6 +26,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using libfintx.FinTS.Data;
 using libfintx.FinTS.Message;
 using libfintx.FinTS.Segments;
@@ -47,6 +48,30 @@ namespace libfintx.FinTS
             var activeAccount = ResolveAccountForHkkaz(client);
 
             client.SEGNUM = Convert.ToInt16(SEG_NUM.Seg3);
+
+            if (client.HIKAZS <= 0)
+            {
+                try
+                {
+                    var bpd = client.BPD;
+                    var recovered = bpd?.HIKAZS?.Select(h => h.Version).DefaultIfEmpty(0).Max() ?? 0;
+                    if (recovered <= 0 && !string.IsNullOrWhiteSpace(bpd?.Raw))
+                    {
+                        foreach (Match m in Regex.Matches(bpd.Raw, @"HIKAZS:\d+:(?<ver>\d+):"))
+                        {
+                            if (int.TryParse(m.Groups["ver"].Value, out var v) && v > recovered)
+                                recovered = v;
+                        }
+                    }
+                    if (recovered > 0)
+                    {
+                        client.HIKAZS = recovered;
+                    }
+                }
+                catch (Exception)
+                {
+                }
+            }
 
             if (string.IsNullOrEmpty(FromDate))
             {

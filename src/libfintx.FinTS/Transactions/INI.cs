@@ -23,6 +23,7 @@
 
 using System;
 using System.Text;
+using System.Linq;
 using System.Threading.Tasks;
 using libfintx.FinTS.Data;
 using libfintx.FinTS.Exceptions;
@@ -137,6 +138,31 @@ namespace libfintx.FinTS
                     // string segments_ =
                     //    "HKIDN:" + SEG_NUM.Seg3 + ":2+" + SEG_COUNTRY.Germany + ":" + connectionDetails.BlzPrimary + "+" + connectionDetails.UserId + "+" + client.SystemId + "+1'" +
                     //    "HKVVB:" + SEG_NUM.Seg4 + ":3+0+0+0+" + FinTsGlobals.ProductId + "+" + FinTsGlobals.Version + "'";
+
+                    // Some banks require DialogInitSCA (HKIDN + HKVVB + HKTAN).
+                    // Recover HITANS from BPD only if the current state is too low (< 6) and
+                    // the BPD contains a matching TAN process (e.g. 911) with HITANS >= 6.
+                    if (client.HITANS < 6 && !string.IsNullOrEmpty(client.HIRMS))
+                    {
+                        try
+                        {
+                            if (int.TryParse(client.HIRMS, out int hirmCode))
+                            {
+                                var recoveredHitans = client.BPD?.HITANS?
+                                    .Where(h => h.TanProcesses != null && h.TanProcesses.Any(tp => tp.TanCode == hirmCode))
+                                    .Select(h => h.Version)
+                                    .DefaultIfEmpty(0)
+                                    .Max() ?? 0;
+                                if (recoveredHitans >= 6 && recoveredHitans > client.HITANS)
+                                {
+                                    client.HITANS = recoveredHitans;
+                                }
+                            }
+                        }
+                        catch (Exception)
+                        {
+                        }
+                    }
 
                     if (client.HITANS >= 6)
                     {
