@@ -814,6 +814,13 @@ namespace libfintx.FinTS.Message
             }
         }
 
+        private static string MaskUserTan(string message, string userId, string pin)
+        {
+            message = Regex.Replace(message, $@"\b{Regex.Escape(userId)}", new string('X', userId.Length));
+            message = Regex.Replace(message, $@"\b{Regex.Escape(pin)}", new string('X', pin.Length));
+            return message;
+        }
+
         /// <summary>
         /// Send FinTS message
         /// </summary>
@@ -826,6 +833,7 @@ namespace libfintx.FinTS.Message
             client.Logger.LogInformation("Url: " + client.ConnectionDetails.Url);
 
             TraceUserTan(client, Message, client.ConnectionDetails.UserIdEscaped, client.ConnectionDetails.PinEscaped);
+            client.Logger.LogDebug("RAW_IN {Message}", MaskUserTan(Message, client.ConnectionDetails.UserIdEscaped, client.ConnectionDetails.PinEscaped));
 
             return await SendAsync(client, Message);
         }
@@ -870,6 +878,7 @@ namespace libfintx.FinTS.Message
                 }
 
                 TraceUserTan(client, Message, client.ConnectionDetails.UserIdEscaped, client.ConnectionDetails.PinEscaped);
+                client.Logger.LogDebug("RAW_OUT {Message}", MaskUserTan(FinTSMessage, client.ConnectionDetails.UserIdEscaped, client.ConnectionDetails.PinEscaped));
 
                 return FinTSMessage;
             }

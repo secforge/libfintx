@@ -45,7 +45,26 @@ namespace libfintx.FinTS
 
             SEG sEG = new SEG();
             string segments = string.Empty;
+            var connectionDetails = client.ConnectionDetails;
             var activeAccount = ResolveAccountForHkkaz(client);
+
+            // Some banks return HIUPD entries with IBAN/BIC but without classic account number fields.
+            // HKKAZ v5 still requires account number + BLZ, so backfill missing values from connection details.
+            activeAccount.AccountNumber ??= string.Empty;
+            activeAccount.AccountBankCode ??= string.Empty;
+            activeAccount.SubAccountFeature ??= string.Empty;
+            activeAccount.AccountIban ??= string.Empty;
+            activeAccount.AccountBic ??= string.Empty;
+            if (string.IsNullOrWhiteSpace(activeAccount.AccountNumber))
+                activeAccount.AccountNumber = connectionDetails.Account ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(activeAccount.AccountBankCode))
+                activeAccount.AccountBankCode = connectionDetails.Blz.ToString();
+            if (string.IsNullOrWhiteSpace(activeAccount.SubAccountFeature))
+                activeAccount.SubAccountFeature = connectionDetails.SubAccount ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(activeAccount.AccountIban))
+                activeAccount.AccountIban = connectionDetails.Iban ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(activeAccount.AccountBic))
+                activeAccount.AccountBic = connectionDetails.Bic ?? string.Empty;
 
             client.SEGNUM = Convert.ToInt16(SEG_NUM.Seg3);
 

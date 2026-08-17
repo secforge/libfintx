@@ -55,6 +55,7 @@ namespace libfintx.FinTS
         /// The bank parameter data store.
         /// </summary>
         internal IBpdStore BdpStore { get; }
+        internal IUpdStore UpdStore { get; }
 
         /// <summary>
         /// The bank parameter data of the bank given in the connection details.
@@ -96,16 +97,17 @@ namespace libfintx.FinTS
         /// <b>Note </b> that at next major version upgrade, the default file logger will be replaced by
         /// a null logger not logging output anywhere.
         /// </param>
-        public FinTsClient(ConnectionDetails connection, bool anonymous = false, IBpdStore? bpdDataStore = null, ILoggerFactory? loggerFactory = null)
+        public FinTsClient(ConnectionDetails connection, bool anonymous = false, IBpdStore? bpdDataStore = null, ILoggerFactory? loggerFactory = null, IUpdStore? updDataStore = null)
         {
             ConnectionDetails = connection;
             Anonymous = anonymous;
-
             _loggerFactory = loggerFactory ?? LoggerFactory.Create(builder => { builder.AddProvider(FileLoggerProvider.CreateLibfintxLogger()); });
             Logger = _loggerFactory.CreateLogger<FinTsClient>();
 
             BdpStore = bpdDataStore
                        ?? new BpdFileStore(Path.Combine(FinTsGlobals.ProgramBaseDir, "BPD"), _loggerFactory);
+            UpdStore = updDataStore
+                       ?? new UpdFileStore(Path.Combine(FinTsGlobals.ProgramBaseDir, "UPD"));
             activeAccount = null;
 
             // When deprecating the default file logger maybe in next MAJOR VERSION UPGRADE, use this:

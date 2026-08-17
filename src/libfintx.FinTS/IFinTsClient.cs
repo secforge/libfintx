@@ -65,5 +65,6 @@ namespace libfintx.FinTS
         Task<HBCIDialogResult<List<CamtStatement>>> Transactions_camt(TANDialog tanDialog, CamtVersion camtVers, DateTime? startDate = null, DateTime? endDate = null, bool saveCamtFile = false);
         Task<HBCIDialogResult> Transfer(TANDialog tanDialog, string receiverName, string receiverIBAN, string receiverBIC, decimal amount, string purpose, string hirms);
         Task<HBCIDialogResult> Transfer_Terminated(TANDialog tanDialog, string receiverName, string receiverIBAN, string receiverBIC, decimal amount, string purpose, DateTime executionDay, string hirms);
+        Task<HBCIDialogResult<CreditCardTransactionData>> CreditCardTransactions(TANDialog tanDialog, DateTime? startDate = null, DateTime? endDate = null);
     }
 }

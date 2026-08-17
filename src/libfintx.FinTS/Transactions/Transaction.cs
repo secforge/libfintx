@@ -25,6 +25,7 @@ using libfintx.FinTS.Camt;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using static libfintx.FinTS.DKKKU;
 using static libfintx.FinTS.HKCAZ;
 using static libfintx.FinTS.HKCCM;
 using static libfintx.FinTS.HKCCS;
@@ -174,6 +175,11 @@ namespace libfintx.FinTS
         public static async Task<String> HKCAZ(FinTsClient client, string FromDate, string ToDate, string Startpoint, CamtVersion camtVers)
         {
             return await Init_HKCAZ(client, FromDate, ToDate, Startpoint, camtVers);
+        }
+
+        public static async Task<String> DKKKU(FinTsClient client, string FromDate, string ToDate, string Startpoint)
+        {
+            return await Init_DKKKU(client, FromDate, ToDate, Startpoint);
         }
     }
 }

@@ -86,7 +86,8 @@ public partial class FinTsClient
             if (upd.Length > 0)
             {
                 Logger.LogInformation("Saving UPD ...");
-                Helper.SaveUPD(ConnectionDetails.Blz, ConnectionDetails.UserId, upd);
+                this.UpdStore.SaveUPD(280, ConnectionDetails.Blz, ConnectionDetails.UserId, upd)
+                    .Wait();
                 UPD.ParseUpd(upd, Logger);
             }
 
