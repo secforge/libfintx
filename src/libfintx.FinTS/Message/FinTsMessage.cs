@@ -814,12 +814,60 @@ namespace libfintx.FinTS.Message
             }
         }
 
-        private static string MaskUserTan(string message, string userId, string pin)
+        /// <summary>
+        /// Masks a request for the raw trace: the PIN/TAN element of HNSHA (found by structure, so
+        /// escaped characters cannot bypass it) and every occurrence of the user id.
+        /// </summary>
+        internal static string MaskRequest(string message, string userId)
         {
-            message = Regex.Replace(message, $@"\b{Regex.Escape(userId)}", new string('X', userId.Length));
-            message = Regex.Replace(message, $@"\b{Regex.Escape(pin)}", new string('X', pin.Length));
+            var sb = new StringBuilder(message.Length);
+            int pos = 0;
+            int start;
+            while ((start = message.IndexOf("HNSHA:", pos, StringComparison.Ordinal)) >= 0)
+            {
+                // HNSHA:n:v+reference+certificate+PIN[:TAN]' -> mask everything after the third '+'
+                int i = start;
+                int plus = 0;
+                while (i < message.Length && plus < 3)
+                {
+                    if (message[i] == '?') i++;
+                    else if (message[i] == '+') plus++;
+                    i++;
+                }
+                int end = i;
+                while (end < message.Length && message[end] != '\'')
+                {
+                    if (message[end] == '?') end++;
+                    end++;
+                }
+                sb.Append(message, pos, i - pos);
+                if (plus == 3)
+                    sb.Append("***");
+                else
+                    sb.Append(message, i, Math.Min(end, message.Length) - i);
+                pos = Math.Min(end, message.Length);
+            }
+            sb.Append(message, pos, message.Length - pos);
+            message = sb.ToString();
+
+            if (!string.IsNullOrEmpty(userId))
+                message = message.Replace(userId, new string('X', userId.Length), StringComparison.Ordinal);
             return message;
         }
+
+        /// <summary>
+        /// Masks a response for the raw trace: IBANs and numbers with 10 or more digits
+        /// (card numbers, account numbers) keep only their last four characters.
+        /// </summary>
+        internal static string MaskResponse(string message)
+        {
+            message = Regex.Replace(message, @"\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b", m => MaskKeepLast4(m.Value));
+            message = Regex.Replace(message, @"\d{10,}", m => MaskKeepLast4(m.Value));
+            return message;
+        }
+
+        private static string MaskKeepLast4(string value) =>
+            new string('X', value.Length - 4) + value.Substring(value.Length - 4);
 
         /// <summary>
         /// Send FinTS message
@@ -833,7 +881,8 @@ namespace libfintx.FinTS.Message
             client.Logger.LogInformation("Url: " + client.ConnectionDetails.Url);
 
             TraceUserTan(client, Message, client.ConnectionDetails.UserIdEscaped, client.ConnectionDetails.PinEscaped);
-            client.Logger.LogDebug("RAW_IN {Message}", MaskUserTan(Message, client.ConnectionDetails.UserIdEscaped, client.ConnectionDetails.PinEscaped));
+            if (client.RawMessageTrace)
+                client.Logger.LogDebug("RAW_OUT {Message}", MaskRequest(Message, client.ConnectionDetails.UserIdEscaped));
 
             return await SendAsync(client, Message);
         }
@@ -878,7 +927,8 @@ namespace libfintx.FinTS.Message
                 }
 
                 TraceUserTan(client, Message, client.ConnectionDetails.UserIdEscaped, client.ConnectionDetails.PinEscaped);
-                client.Logger.LogDebug("RAW_OUT {Message}", MaskUserTan(FinTSMessage, client.ConnectionDetails.UserIdEscaped, client.ConnectionDetails.PinEscaped));
+                if (client.RawMessageTrace)
+                    client.Logger.LogDebug("RAW_IN {Message}", MaskResponse(FinTSMessage));
 
                 return FinTSMessage;
             }

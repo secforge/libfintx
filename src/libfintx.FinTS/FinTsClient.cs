@@ -52,6 +52,14 @@ namespace libfintx.FinTS
         public bool FormattedTrace { get; set; } = true;
 
         /// <summary>
+        /// Logs every raw request and response at debug level (RAW_OUT / RAW_IN). Off by default.
+        /// PIN, TAN and user id are masked in requests; IBANs and numbers with 10 or more digits
+        /// are masked in responses. Responses still contain personal and account data
+        /// (names, short account numbers, transactions), so enable this only for debugging.
+        /// </summary>
+        public bool RawMessageTrace { get; set; } = false;
+
+        /// <summary>
         /// The bank parameter data store.
         /// </summary>
         internal IBpdStore BdpStore { get; }
